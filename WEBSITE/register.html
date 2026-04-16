@@ -15,21 +15,28 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDgx60z2hjfLQwlQtxM0bt3KJ9flDx-7VI",                  // ← replace with your web API key from Firebase Console
+    apiKey: "AIzaSyDgx60z2hjfLQwlQtxM0bt3KJ9flDx-7VI",
     authDomain: "chipfindr-5de9a.firebaseapp.com",
     projectId: "chipfindr-5de9a",
     storageBucket: "chipfindr-5de9a.appspot.com",
     messagingSenderId: "395445295949",
-    appId: "1:395445295949:web:4cffbd2db2a9c7fd083504"                     // ← replace with your web app ID
+    appId: "1:395445295949:web:4cffbd2db2a9c7fd083504"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  // Expose the functions we need to the form handler
-  window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
+  // Sign in anonymously so Firestore auth rules are satisfied
+  signInAnonymously(auth).then(() => {
+    window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
+  }).catch((err) => {
+    console.error("Auth error:", err);
+    window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
+  });
 </script>
 
 <style>
@@ -76,6 +83,469 @@
     color: var(--brown-dark);
     font-weight: 800;
     font-size: 1.1rem;
+  }
+
+  .nav-back {
+    color: var(--brown-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .nav-back:hover { color: var(--brown-dark); }
+
+  main {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero h1 em {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    color: var(--orange);
+    font-weight: 400;
+  }
+
+  .hero p {
+    color: var(--brown-soft);
+    font-size: 1rem;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 1px 3px rgba(56, 33, 10, 0.04);
+    border: 1px solid rgba(56, 33, 10, 0.05);
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group.group {
+    margin-bottom: 1.5rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--brown-soft);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--brown-dark);
+    background: var(--white);
+    border: 1px solid rgba(56, 33, 10, 0.1);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--orange);
+  }
+
+  input[readonly] {
+    background: rgba(56, 33, 10, 0.04);
+    font-family: 'SF Mono', Menlo, monospace;
+    font-weight: 600;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--brown-soft);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 1.5rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(56, 33, 10, 0.06);
+  }
+
+  .section-label:first-of-type {
+    padding-top: 0;
+    border-top: none;
+    margin-top: 0;
+  }
+
+  .field-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  button {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 800;
+    font-family: inherit;
+    color: white;
+    background: var(--orange);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  button:hover:not(:disabled) { background: #C55C10; }
+  button:active:not(:disabled) { transform: scale(0.98); }
+
+  button:disabled {
+    background: rgba(56, 33, 10, 0.15);
+    cursor: not-allowed;
+  }
+
+  .fine-print {
+    font-size: 0.78rem;
+    color: var(--brown-soft);
+    opacity: 0.65;
+    text-align: center;
+    margin-top: 1rem;
+    line-height: 1.5;
+  }
+
+  .message {
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 1rem;
+  }
+
+  .message.error {
+    background: rgba(182, 64, 64, 0.1);
+    color: var(--red);
+  }
+
+  .message.info {
+    background: rgba(26, 127, 74, 0.08);
+    color: var(--green);
+  }
+
+  .success-screen {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    display: none;
+  }
+
+  .success-screen.visible { display: block; }
+
+  .success-screen .check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    background: rgba(26, 127, 74, 0.12);
+    color: var(--green);
+    border-radius: 50%;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .success-screen h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .success-screen p {
+    color: var(--brown-soft);
+    margin-bottom: 2rem;
+  }
+
+  .success-screen .chip-display {
+    display: inline-block;
+    background: rgba(56, 33, 10, 0.04);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-weight: 600;
+    color: var(--brown-dark);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  .link-btn {
+    display: inline-block;
+    color: var(--orange);
+    font-weight: 700;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+  }
+
+  .info-banner {
+    background: rgba(224, 107, 20, 0.06);
+    border: 1px solid rgba(224, 107, 20, 0.15);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--brown-dark);
+    line-height: 1.55;
+  }
+
+  .info-banner strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="26" height="26" viewBox="0 0 100 100" fill="#E06B14" aria-hidden="true">
+      <ellipse cx="30" cy="20" rx="10" ry="13"/>
+      <ellipse cx="58" cy="15" rx="9" ry="12"/>
+      <ellipse cx="80" cy="28" rx="8" ry="11"/>
+      <ellipse cx="90" cy="52" rx="8" ry="11"/>
+      <path d="M50 40 C20 38 12 68 18 80 C24 92 38 95 50 92 C62 95 76 92 82 80 C88 68 80 38 50 40Z"/>
+    </svg>
+    ChipFindr
+  </a>
+  <a href="/" class="nav-back">← Back to home</a>
+</nav>
+
+<main>
+  <div class="hero">
+    <h1>Register your pet's<br><em>microchip for free.</em></h1>
+    <p>One place for any brand of chip. So if your pet is ever lost, the vet who scans them can find you.</p>
+  </div>
+
+  <!-- Registration form -->
+  <div class="card" id="formCard">
+
+    <div class="info-banner">
+      <strong>Already have a chip?</strong> You don't need to replace it. Just register the number here so your contact info is findable, no matter which registry your chip originally came from.
+    </div>
+
+    <form id="registerForm" novalidate>
+
+      <div class="section-label">Microchip</div>
+
+      <div class="form-group">
+        <label for="chipNumber">Chip number (9, 10, or 15 digits)</label>
+        <input type="text" id="chipNumber" name="chipNumber" required
+               placeholder="985112004567891"
+               inputmode="numeric"
+               autocomplete="off"
+               maxlength="15">
+      </div>
+
+      <div class="section-label">Pet info</div>
+
+      <div class="field-grid">
+        <div class="form-group">
+          <label for="petName">Pet name</label>
+          <input type="text" id="petName" name="petName" required placeholder="Elvis">
+        </div>
+
+        <div class="form-group">
+          <label for="species">Species</label>
+          <select id="species" name="species" required>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+            <option value="Rabbit">Rabbit</option>
+            <option value="Bird">Bird</option>
+            <option value="Horse">Horse</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="breed">Breed (optional)</label>
+          <input type="text" id="breed" name="breed" placeholder="French Bulldog">
+        </div>
+      </div>
+
+      <div class="section-label">Your contact info</div>
+
+      <div class="field-grid">
+        <div class="form-group">
+          <label for="ownerName">Your name</label>
+          <input type="text" id="ownerName" name="ownerName" required placeholder="Jane Doe">
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" name="phone" required placeholder="(303) 555-0142" autocomplete="tel">
+        </div>
+
+        <div class="form-group">
+          <label for="city">City, state</label>
+          <input type="text" id="city" name="city" placeholder="Denver, CO" autocomplete="address-level2">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email (recommended)</label>
+          <input type="email" id="email" name="email" placeholder="jane@example.com" autocomplete="email">
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn">
+        <svg width="16" height="16" viewBox="0 0 100 100" fill="white" aria-hidden="true">
+          <ellipse cx="30" cy="20" rx="10" ry="13"/>
+          <ellipse cx="58" cy="15" rx="9" ry="12"/>
+          <ellipse cx="80" cy="28" rx="8" ry="11"/>
+          <ellipse cx="90" cy="52" rx="8" ry="11"/>
+          <path d="M50 40 C20 38 12 68 18 80 C24 92 38 95 50 92 C62 95 76 92 82 80 C88 68 80 38 50 40Z"/>
+        </svg>
+        <span id="submitText">Register — Free forever</span>
+      </button>
+
+      <div id="errorMessage" class="message error" style="display:none"></div>
+
+      <p class="fine-print">
+        We only share your info with vets, shelters, or animal control officers searching for this specific chip. You can update or remove your registration anytime. We never sell your data.
+      </p>
+    </form>
+  </div>
+
+  <!-- Success state -->
+  <div class="card success-screen" id="successCard">
+    <div class="check">✓</div>
+    <h2>You're registered.</h2>
+    <p>If your pet is ever lost, whoever scans them can find you.</p>
+    <div class="chip-display" id="successChip"></div>
+    <br>
+    <a href="/" class="link-btn">← Back to ChipFindr home</a>
+  </div>
+
+</main>
+
+<script type="module">
+  // Wait for firebase to be ready
+  function waitForFirebase() {
+    return new Promise((resolve) => {
+      const check = () => {
+        if (window.firebaseRegistry) resolve(window.firebaseRegistry);
+        else setTimeout(check, 50);
+      };
+      check();
+    });
+  }
+
+  const form    = document.getElementById('registerForm');
+  const btn     = document.getElementById('submitBtn');
+  const btnText = document.getElementById('submitText');
+  const errEl   = document.getElementById('errorMessage');
+  const formCard = document.getElementById('formCard');
+  const successCard = document.getElementById('successCard');
+  const successChip = document.getElementById('successChip');
+
+  function showError(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearError() {
+    errEl.style.display = 'none';
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+
+    // Extract + validate
+    const chipNumber = form.chipNumber.value.trim().replace(/\D/g, '');
+    const petName    = form.petName.value.trim();
+    const species    = form.species.value;
+    const breed      = form.breed.value.trim();
+    const ownerName  = form.ownerName.value.trim();
+    const phone      = form.phone.value.trim();
+    const city       = form.city.value.trim();
+    const email      = form.email.value.trim();
+
+    if (chipNumber.length < 9 || chipNumber.length > 15) {
+      showError("Chip number must be 9, 10, or 15 digits.");
+      return;
+    }
+    if (!petName)   { showError("Please enter your pet's name.");    return; }
+    if (!ownerName) { showError("Please enter your name.");          return; }
+    if (!phone)     { showError("Please enter a phone number.");     return; }
+
+    // Disable form while saving
+    btn.disabled = true;
+    btnText.textContent = "Saving…";
+
+    try {
+      const { db, doc, setDoc, getDoc, serverTimestamp } = await waitForFirebase();
+      const docRef = doc(db, "registry", chipNumber);
+
+      // Check if this chip is already registered
+      const existing = await getDoc(docRef);
+      if (existing.exists()) {
+        showError("This chip is already registered. To update it, please sign in to the ChipFindr app.");
+        btn.disabled = false;
+        btnText.textContent = "Register — Free forever";
+        return;
+      }
+
+      await setDoc(docRef, {
+        chipNumber,
+        petName,
+        species,
+        breed,
+        ownerName,
+        phone,
+        city,
+        email,
+        registeredAt: serverTimestamp(),
+        source: "Web registration"
+      });
+
+      // Success
+      successChip.textContent = chipNumber;
+      formCard.style.display = 'none';
+      successCard.classList.add('visible');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error(err);
+      showError("Could not save. Check your connection and try again.");
+      btn.disabled = false;
+      btnText.textContent = "Register — Free forever";
+    }
+  });
+
+  // Auto-format chip input to digits only
+  document.getElementById('chipNumber').addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+  });
+</script>
+
+</body>
+</html>    font-size: 1.1rem;
   }
 
   .nav-back {
