@@ -26,17 +26,19 @@
     appId: "1:395445295949:web:4cffbd2db2a9c7fd083504"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const app  = initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
   const auth = getAuth(app);
 
-  // Sign in anonymously so Firestore auth rules are satisfied
-  signInAnonymously(auth).then(() => {
-    window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
-  }).catch((err) => {
-    console.error("Auth error:", err);
-    window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
-  });
+  // Sign in anonymously so Firestore security rules allow the write
+  signInAnonymously(auth)
+    .then(() => {
+      window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
+    })
+    .catch((err) => {
+      console.error("Anonymous auth failed:", err);
+      window.firebaseRegistry = { db, doc, setDoc, getDoc, serverTimestamp };
+    });
 </script>
 
 <style>
